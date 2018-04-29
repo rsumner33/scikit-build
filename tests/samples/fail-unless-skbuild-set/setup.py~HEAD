@@ -1,0 +1,15 @@
+from skbuild import setup
+
+setup(
+    name="fail_unless_skbuild_set",
+    version="0.0.1",
+<<<<<<< HEAD:tests/samples/fail-unless-skbuild-set/setup.py
+    description=("test project that should fail unless the "
+                 "CMake variable \"SKBUILD\" is set"),
+=======
+    description="integration test of skbuild's support across various python"
+                "module types and code generation technologies",
+>>>>>>> 3dede2d... add CMake variable to project builds: "SKBUILD":tests/samples/tower-of-babel/setup.py
+    author="The scikit-build team",
+    license="MIT",
+)
