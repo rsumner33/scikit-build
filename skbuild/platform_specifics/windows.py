@@ -33,11 +33,6 @@ class WindowsPlatform(abstract.CMakePlatform):
             (version.major == 3 and version.minor <= 2)
         ):
             official_vs_year = "2008"
-            self._vs_help = vs_help_template % (
-                official_vs_year,
-                "Microsoft Visual C++ Compiler for Python 2.7",
-                "http://aka.ms/vcpython27"
-            )
 
         # For Python 3.3 to Python 3.4: VS2010
         elif (
@@ -47,28 +42,10 @@ class WindowsPlatform(abstract.CMakePlatform):
             )
         ):
             official_vs_year = "2010"
-            self._vs_help = vs_help_template % (
-                official_vs_year,
-                "Windows SDK for Windows 7 and .NET 4.0",
-                "https://www.microsoft.com/download/details.aspx?id=8279"
-            )
-            #
 
         # For Python 3.5 and above: VS2015
         elif version.major == 3 and version.minor >= 5:
             official_vs_year = "2015"
-            self._vs_help = vs_help_template % (
-                official_vs_year,
-                "Microsoft Visual C++ Build Tools",
-                "http://landinghub.visualstudio.com/visual-cpp-build-tools"
-            )
-            self._vs_help += "\n\n" + textwrap.dedent(
-                """
-                Or with "Visual Studio 2015":
-
-                  https://visualstudio.com/
-                """
-            ).strip()
 
         else:
             raise RuntimeError("Only Python >= 2.7 is supported on Windows.")
@@ -135,68 +112,36 @@ __get_msvc_compiler_env_cache = dict()
 def _get_msvc_compiler_env(vs_version):
     # pylint:disable=global-statement
     global __get_msvc_compiler_env_cache
+def _get_msvc_compiler_env(vs_version):
     from setuptools import monkey
     monkey.patch_for_msvc_specialized_compiler()
     arch = "x86"
     if vs_version < 14:
         if platform.architecture()[0] == "64bit":
             arch = "amd64"
-        # If any, return cached version
-        cache_key = ",".join([str(vs_version), arch])
-        if cache_key in __get_msvc_compiler_env_cache:
-            return __get_msvc_compiler_env_cache[cache_key]
         try:
             import distutils.msvc9compiler
-            cached_env = distutils.msvc9compiler.query_vcvarsall(vs_version, arch)
-            __get_msvc_compiler_env_cache[cache_key] = cached_env
-            return cached_env
+            return distutils.msvc9compiler.query_vcvarsall(vs_version, arch)
         except ImportError:
             print("failed to import 'distutils.msvc9compiler'")
     else:
         if platform.architecture()[0] == "64bit":
             arch = "x86_amd64"
-        # If any, return cached version
-        cache_key = ",".join([str(vs_version), arch])
-        if cache_key in __get_msvc_compiler_env_cache:
-            return __get_msvc_compiler_env_cache[cache_key]
         try:
             import distutils._msvccompiler
-            from distutils.errors import DistutilsPlatformError
-            # pylint:disable=protected-access
             vc_env = distutils._msvccompiler._get_vc_env(arch)
-            cached_env = {
+            return {
                 'PATH': vc_env.get('path', ''),
                 'INCLUDE': vc_env.get('include', ''),
                 'LIB': vc_env.get('lib', '')
             }
-            __get_msvc_compiler_env_cache[cache_key] = cached_env
-            return cached_env
         except ImportError:
             print("failed to import 'distutils._msvccompiler'")
-        except DistutilsPlatformError:
-            pass
     return {}
 
 
 class CMakeVisualStudioCommandLineGenerator(CMakeGenerator):
-    """
-    Represents a command-line CMake generator initialized with a
-    specific `Visual Studio` environment.
-
-    .. automethod:: __init__
-    """
     def __init__(self, name, year):
-        """Instantiate CMake command-line generator.
-
-        The generator ``name`` can be values like `Ninja`, `NMake Makefiles`
-        or `NMake Makefiles JOM`.
-
-        The ``year`` defines the `Visual Studio` environment associated
-        with the generator. See :data:`VS_YEAR_TO_VERSION`.
-
-        The platform (32-bit or 64-bit) is automatically selected based
-        on the value of ``platform.architecture()[0]``.
-        """
         vc_env = _get_msvc_compiler_env(VS_YEAR_TO_VERSION[year])
         env = {str(key.upper()): str(value) for key, value in vc_env.items()}
         super(CMakeVisualStudioCommandLineGenerator, self).__init__(name, env)

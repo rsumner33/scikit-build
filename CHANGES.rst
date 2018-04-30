@@ -295,6 +295,8 @@ Tests
 
 .. _scikit-ci-addons: http://scikit-ci-addons.readthedocs.io
 
+* Add ``get_cmakecache_variables`` utility function.
+
 Internal API
 ------------
 
